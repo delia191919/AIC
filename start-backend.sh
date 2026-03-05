@@ -1,0 +1,6 @@
+#!/bin/sh
+podman run --rm -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL:-jdbc:mysql://192.168.0.157:3306/aic_avalanse}" \
+  -e SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME:-root}" \
+  -e SPRING_DATASOURCE_PASSWORD="${SPRING_DATASOURCE_PASSWORD:-changeme}" \
+  aic-backend

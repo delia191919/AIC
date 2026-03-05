@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: .
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://192.168.0.157:3306/aic_avalanse
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: changeme
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend

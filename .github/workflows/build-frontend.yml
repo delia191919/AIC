@@ -45,6 +45,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
       - name: Redeploy app on TrueNAS
         run: |
           curl -sSf -X POST \

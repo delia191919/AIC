@@ -54,4 +54,4 @@ jobs:
             "${{ secrets.TRUENAS_URL }}/api/v2.0/app/redeploy" \
             -H "Authorization: Bearer ${{ secrets.TRUENAS_API_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{"app-name":"aic-frontend"}'
+            -d '"aic-frontend"'

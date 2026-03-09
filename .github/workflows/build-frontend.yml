@@ -50,7 +50,7 @@ jobs:
     steps:
       - name: Redeploy app on TrueNAS
         run: |
-          curl -sSf -X POST \
+          curl -sSf -k -X POST \
             "${{ secrets.TRUENAS_URL }}/api/v2.0/app/redeploy" \
             -H "Authorization: Bearer ${{ secrets.TRUENAS_API_KEY }}" \
             -H "Content-Type: application/json" \

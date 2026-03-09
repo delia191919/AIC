@@ -1,8 +1,8 @@
 import api from './api';
 
 const conditionsService = {
-    getAll: async () => {
-        const response = await api.get('/conditions');
+    getAll: async (params) => {
+        const response = await api.get('/conditions', { params });
         return response.data;
     },
 

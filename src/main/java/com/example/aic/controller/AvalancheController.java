@@ -10,8 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/avalanches")
@@ -24,13 +25,13 @@ public class AvalancheController {
     private UserRepository userRepository;
 
     @GetMapping
-    public List<AvalancheDTO> getAll() {
-        return avalancheService.getAllAvalanches();
+    public Page<AvalancheDTO> getAll(Pageable pageable) {
+        return avalancheService.getAllAvalanches(pageable);
     }
 
     @GetMapping("/validated")
-    public List<AvalancheDTO> getValidated() {
-        return avalancheService.getValidatedAvalanches();
+    public Page<AvalancheDTO> getValidated(Pageable pageable) {
+        return avalancheService.getValidatedAvalanches(pageable);
     }
 
     @GetMapping("/{id}")
@@ -39,7 +40,7 @@ public class AvalancheController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<AvalancheDTO>> search(
+    public ResponseEntity<Page<AvalancheDTO>> search(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) Integer massifId,
             @RequestParam(required = false) Integer typeId,
@@ -52,9 +53,10 @@ public class AvalancheController {
             @RequestParam(required = false) Integer minSlope,
             @RequestParam(required = false) String size,
             @RequestParam(required = false) Boolean hasVictims,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
         return ResponseEntity.ok(avalancheService.search(title, massifId, typeId, causeId, orientationId,
-                startDate, endDate, minAltitude, maxAltitude, minSlope, size, hasVictims, status));
+                startDate, endDate, minAltitude, maxAltitude, minSlope, size, hasVictims, status, pageable));
     }
 
     @PostMapping

@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,16 +37,14 @@ public class AvalancheService {
     @Autowired
     private ModelMapper modelMapper;
 
-    public List<AvalancheDTO> getAllAvalanches() {
-        return avalancheRepository.findAll().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public Page<AvalancheDTO> getAllAvalanches(Pageable pageable) {
+        return avalancheRepository.findAll(pageable)
+                .map(this::convertToDto);
     }
 
-    public List<AvalancheDTO> getValidatedAvalanches() {
-        return avalancheRepository.findByStatus(Avalanche.Status.VALIDATED).stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public Page<AvalancheDTO> getValidatedAvalanches(Pageable pageable) {
+        return avalancheRepository.findByStatus(Avalanche.Status.VALIDATED, pageable)
+                .map(this::convertToDto);
     }
 
     public AvalancheDTO getAvalancheById(Integer id) {
@@ -53,16 +53,14 @@ public class AvalancheService {
         return convertToDto(avalanche);
     }
 
-    public List<AvalancheDTO> search(String title, Integer massifId, Integer typeId, Integer causeId,
+    public Page<AvalancheDTO> search(String title, Integer massifId, Integer typeId, Integer causeId,
             Integer orientationId, java.time.LocalDate startDate, java.time.LocalDate endDate,
             Integer minAltitude, Integer maxAltitude, Integer minSlope,
-            String size, Boolean hasVictims, String status) {
+            String size, Boolean hasVictims, String status, Pageable pageable) {
         return avalancheRepository.findAll(com.example.aic.repository.specification.AvalancheSpecification.filterBy(
                 title, massifId, typeId, causeId, orientationId, startDate, endDate,
-                minAltitude, maxAltitude, minSlope, size, hasVictims, status))
-                .stream()
-                .map(this::convertToDto)
-                .collect(java.util.stream.Collectors.toList());
+                minAltitude, maxAltitude, minSlope, size, hasVictims, status), pageable)
+                .map(this::convertToDto);
     }
 
     @Transactional

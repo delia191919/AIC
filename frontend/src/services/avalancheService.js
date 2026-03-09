@@ -1,13 +1,13 @@
 import api from './api';
 
 const avalancheService = {
-    getAll: async () => {
-        const response = await api.get('/avalanches');
+    getAll: async (params) => {
+        const response = await api.get('/avalanches', { params });
         return response.data;
     },
 
-    getValidated: async () => {
-        const response = await api.get('/avalanches/validated');
+    getValidated: async (params) => {
+        const response = await api.get('/avalanches/validated', { params });
         return response.data;
     },
 

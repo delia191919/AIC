@@ -10,8 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/conditions")
@@ -24,8 +25,8 @@ public class ConditionsController {
     private UserRepository userRepository;
 
     @GetMapping
-    public List<ConditionsDTO> getAll() {
-        return conditionsService.getAllConditions();
+    public Page<ConditionsDTO> getAll(Pageable pageable) {
+        return conditionsService.getAllConditions(pageable);
     }
 
     @GetMapping("/{id}")
@@ -34,13 +35,14 @@ public class ConditionsController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<ConditionsDTO>> search(
+    public ResponseEntity<Page<ConditionsDTO>> search(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) Integer regionId,
             @RequestParam(required = false) Integer massifId,
             @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate) {
-        return ResponseEntity.ok(conditionsService.search(title, regionId, massifId, startDate, endDate));
+            @RequestParam(required = false) LocalDate endDate,
+            Pageable pageable) {
+        return ResponseEntity.ok(conditionsService.search(title, regionId, massifId, startDate, endDate, pageable));
     }
 
     @PostMapping

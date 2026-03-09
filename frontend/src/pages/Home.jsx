@@ -3,37 +3,46 @@ import { Link } from 'react-router-dom';
 import avalancheService from '../services/avalancheService';
 import conditionsService from '../services/conditionsService';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, MapPin, Activity, ShieldCheck, AlertTriangle, ArrowUpDown, Info, Wind, CloudRain, ListFilter, Search } from 'lucide-react';
+import { Calendar, MapPin, Activity, ShieldCheck, AlertTriangle, ArrowUpDown, Info, Wind, CloudRain, ListFilter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Home = () => {
     const [view, setView] = useState('avalanches'); // 'avalanches' or 'conditions'
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+    const [currentPage, setCurrentPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
     const { user, isExpert } = useAuth();
 
     useEffect(() => {
+        setCurrentPage(0);
+    }, [view, pageSize]);
+
+    useEffect(() => {
         loadData();
-    }, [view, sortOrder]);
+    }, [view, sortOrder, currentPage, pageSize]);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            let result = [];
+            const params = {
+                page: currentPage,
+                size: pageSize,
+                sort: `${view === 'avalanches' ? 'date' : 'createdAt'},${sortOrder}`
+            };
+
+            let response;
             if (view === 'avalanches') {
-                result = await avalancheService.getAll();
+                response = await avalancheService.getAll(params);
             } else {
-                result = await conditionsService.getAll();
+                response = await conditionsService.getAll(params);
             }
 
-            // Client-side sorting by date (assuming both have 'date' or mapping createdDate for conditions)
-            const sortedData = [...result].sort((a, b) => {
-                const dateA = new Date(a.date || a.createdAt);
-                const dateB = new Date(b.date || b.createdAt);
-                return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-            });
-
-            setData(sortedData);
+            setData(response.content || []);
+            setTotalPages(response.totalPages || 0);
+            setTotalElements(response.totalElements || 0);
         } catch (err) {
             console.error('Eroare la încărcarea datelor:', err);
         } finally {
@@ -86,6 +95,20 @@ const Home = () => {
                         <ArrowUpDown size={16} className="text-primary" />
                         Date: {sortOrder === 'desc' ? 'Cele mai noi' : 'Cele mai vechi'}
                     </button>
+
+                    {/* Page Size Selector */}
+                    <div className="bg-glass-bg border border-glass-border px-3 py-2 rounded-xl flex items-center gap-2">
+                        <span className="text-xs font-bold text-text-muted uppercase">Pe pagină:</span>
+                        <select
+                            value={pageSize}
+                            onChange={(e) => setPageSize(Number(e.target.value))}
+                            className="bg-transparent text-sm font-bold text-white focus:outline-none cursor-pointer"
+                        >
+                            <option value={10} className="bg-background">10</option>
+                            <option value={20} className="bg-background">20</option>
+                            <option value={50} className="bg-background">50</option>
+                        </select>
+                    </div>
                 </div>
             </header>
 
@@ -181,6 +204,64 @@ const Home = () => {
                             </div>
                         ))
                     )}
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/5 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <p className="text-sm text-text-muted font-medium">
+                        Afișare <span className="text-white">{data.length}</span> din <span className="text-white">{totalElements}</span> rezultate
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                            disabled={currentPage === 0}
+                            className="p-2 rounded-xl bg-glass-bg border border-glass-border text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-all"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {[...Array(totalPages)].map((_, i) => {
+                                // Dynamic page numbering logic (show current, neighbors, and first/last if many pages)
+                                if (
+                                    totalPages <= 7 ||
+                                    i === 0 ||
+                                    i === totalPages - 1 ||
+                                    (i >= currentPage - 1 && i <= currentPage + 1)
+                                ) {
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => setCurrentPage(i)}
+                                            className={`w-10 h-10 rounded-xl font-bold text-sm transition-all border ${currentPage === i
+                                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                                                    : 'bg-glass-bg border-glass-border text-text-muted hover:text-white hover:border-white/20'
+                                                }`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    );
+                                } else if (
+                                    (i === 1 && currentPage > 2) ||
+                                    (i === totalPages - 2 && currentPage < totalPages - 3)
+                                ) {
+                                    return <span key={i} className="px-1 text-text-muted">...</span>;
+                                }
+                                return null;
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                            disabled={currentPage === totalPages - 1}
+                            className="p-2 rounded-xl bg-glass-bg border border-glass-border text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-all"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

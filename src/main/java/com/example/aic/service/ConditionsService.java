@@ -10,6 +10,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,10 +30,9 @@ public class ConditionsService {
     @Autowired
     private ModelMapper modelMapper;
 
-    public List<ConditionsDTO> getAllConditions() {
-        return conditionsRepository.findAll().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public Page<ConditionsDTO> getAllConditions(Pageable pageable) {
+        return conditionsRepository.findAll(pageable)
+                .map(this::convertToDto);
     }
 
     public ConditionsDTO getConditionsById(Integer id) {
@@ -40,13 +41,11 @@ public class ConditionsService {
         return convertToDto(conditions);
     }
 
-    public List<ConditionsDTO> search(String title, Integer regionId, Integer massifId,
-            java.time.LocalDate startDate, java.time.LocalDate endDate) {
+    public Page<ConditionsDTO> search(String title, Integer regionId, Integer massifId,
+            java.time.LocalDate startDate, java.time.LocalDate endDate, Pageable pageable) {
         return conditionsRepository.findAll(com.example.aic.repository.specification.ConditionsSpecification.filterBy(
-                title, regionId, massifId, startDate, endDate))
-                .stream()
-                .map(this::convertToDto)
-                .collect(java.util.stream.Collectors.toList());
+                title, regionId, massifId, startDate, endDate), pageable)
+                .map(this::convertToDto);
     }
 
     public ConditionsDTO createConditions(ConditionsDTO dto, User user) {

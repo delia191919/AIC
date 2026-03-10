@@ -208,12 +208,12 @@ const Home = () => {
             )}
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/5 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <p className="text-sm text-text-muted font-medium">
-                        Afișare <span className="text-white">{data.length}</span> din <span className="text-white">{totalElements}</span> rezultate
-                    </p>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t border-white/5 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <p className="text-sm text-text-muted font-medium">
+                    Afișare <span className="text-white">{data.length}</span> din <span className="text-white">{totalElements}</span> rezultate
+                </p>
 
+                {totalPages > 1 && (
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
@@ -237,8 +237,8 @@ const Home = () => {
                                             key={i}
                                             onClick={() => setCurrentPage(i)}
                                             className={`w-10 h-10 rounded-xl font-bold text-sm transition-all border ${currentPage === i
-                                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
-                                                    : 'bg-glass-bg border-glass-border text-text-muted hover:text-white hover:border-white/20'
+                                                ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                                                : 'bg-glass-bg border-glass-border text-text-muted hover:text-white hover:border-white/20'
                                                 }`}
                                         >
                                             {i + 1}
@@ -262,8 +262,8 @@ const Home = () => {
                             <ChevronRight size={20} />
                         </button>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

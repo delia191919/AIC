@@ -30,7 +30,18 @@ const Register = () => {
             setSuccess(true);
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
-            setError('Eroare la înregistrare. Utilizatorul sau email-ul ar putea exista deja.');
+            let message = 'Eroare la înregistrare. Vă rugăm să încercați din nou.';
+            if (err.response?.data) {
+                if (err.response.data.message) {
+                    message = err.response.data.message;
+                } else if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+                    // Handle Spring validation errors
+                    message = err.response.data.errors[0].defaultMessage || message;
+                } else if (typeof err.response.data === 'string') {
+                    message = err.response.data;
+                }
+            }
+            setError(message);
         } finally {
             setLoading(false);
         }

@@ -24,6 +24,21 @@ const avalancheService = {
         const response = await api.post('/avalanches', data);
         return response.data;
     },
+    
+    createWithImages: async (avalancheData, files) => {
+        const formData = new FormData();
+        // Append JSON as a blob part so Spring identifies it correctly as RequestPart
+        formData.append('avalanche', JSON.stringify(avalancheData));
+        
+        if (files && files.length > 0) {
+            Array.from(files).forEach((file) => {
+                formData.append('files', file);
+            });
+        }
+        
+        const response = await api.post('/avalanches/multipart', formData);
+        return response.data;
+    },
 
     uploadImages: async (id, files) => {
         const formData = new FormData();

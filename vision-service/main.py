@@ -5,7 +5,6 @@ import io
 
 app = FastAPI()
 
-# Load CLIP model once
 print("Loading CLIP model...")
 model = SentenceTransformer('clip-ViT-B-32')
 print("Model loaded.")
@@ -15,31 +14,25 @@ async def analyze_image(file: UploadFile = File(...)):
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes))
     
-    # Define labels (English works best for CLIP)
     labels = [
         "mountain", "snow", "avalanche", "forest", "skiing", "hiking", 
         "sand", "beach", "desert", "person", "car", "room", "cat", "city", 
         "food", "furniture", "indoor", "technology", "face", "ocean"
     ]
     
-    # Compute embeddings
     image_emb = model.encode(image)
     text_emb = model.encode(labels)
     
-    # Compute cosine similarity
     cos_scores = util.cos_sim(image_emb, text_emb)[0]
     
     results = []
     for label, score in zip(labels, cos_scores):
         results.append({"label": label, "score": float(score)})
     
-    # Sort by score
     results.sort(key=lambda x: x["score"], reverse=True)
     
-    # Print for debugging
     print(f"Classification result: {results[:5]}")
     
-    # Validation logic: Top label MUST be relevant
     relevant_labels = ["mountain", "snow", "avalanche", "forest", "skiing", "hiking"]
     top_label = results[0]["label"]
     is_valid = top_label in relevant_labels

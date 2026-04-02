@@ -93,12 +93,7 @@ const AvalancheFormPage = () => {
 
     const handleFinalSubmit = async () => {
         try {
-            const newAvalanche = await avalancheService.create(formData);
-            
-            if (images.length > 0) {
-                await avalancheService.uploadImages(newAvalanche.id, images);
-            }
-            
+            await avalancheService.createWithImages(formData, images);
             navigate('/');
         } catch (err) {
             const message = err.response?.data?.message || 'Eroare la trimiterea raportului. Asigură-te că toate câmpurile sunt completate corect.';

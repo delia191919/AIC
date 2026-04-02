@@ -25,6 +25,9 @@ public class AvalancheController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
     @GetMapping
     public Page<AvalancheDTO> getAll(Pageable pageable) {
         return avalancheService.getAllAvalanches(pageable);
@@ -66,6 +69,20 @@ public class AvalancheController {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).orElseThrow();
         return ResponseEntity.ok(avalancheService.createAvalanche(dto, user));
+    }
+
+    @PostMapping(value = "/multipart", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AvalancheDTO> createWithImages(
+            @RequestPart("avalanche") String avalancheJson,
+            @RequestPart(value = "files", required = false) org.springframework.web.multipart.MultipartFile[] files)
+            throws com.fasterxml.jackson.core.JsonProcessingException {
+
+        AvalancheDTO dto = objectMapper.readValue(avalancheJson, AvalancheDTO.class);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username).orElseThrow();
+
+        return ResponseEntity.ok(avalancheService.createWithImages(dto, files, user));
     }
 
     @PutMapping("/{id}/validate")

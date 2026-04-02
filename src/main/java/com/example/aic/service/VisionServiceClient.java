@@ -41,7 +41,11 @@ public class VisionServiceClient {
             Map<String, Object> response = restTemplate.postForObject(VISION_SERVICE_URL, requestEntity, Map.class);
 
             if (response != null && response.containsKey("valid")) {
-                return (Boolean) response.get("valid");
+                boolean isValid = (Boolean) response.get("valid");
+                String label = (String) response.get("label");
+                Double score = (Double) response.get("score");
+                System.out.println("AI Validation for " + file.getOriginalFilename() + ": " + isValid + " (Label: " + label + ", Score: " + score + ")");
+                return isValid;
             }
 
             return true; // Fallback to true if service fails (don't block user if AI has issues)

@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import metadataService from '../services/metadataService';
 import avalancheService from '../services/avalancheService';
-import { Save, ChevronRight, ChevronLeft, Map, Info, Users, Activity } from 'lucide-react';
+import { Save, ChevronRight, ChevronLeft, Map, Info, Users, Activity, Trash2, Upload, Maximize } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-const AvalancheFormPage = () => {
+const AvalancheEditPage = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    
     const [step, setStep] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [newImages, setNewImages] = useState([]);
     const [metadata, setMetadata] = useState({
         massifs: [],
         types: [],
@@ -13,60 +20,70 @@ const AvalancheFormPage = () => {
         orientations: []
     });
 
-    const [images, setImages] = useState([]);
-
-    const [formData, setFormData] = useState({
-        title: '',
-        date: new Date().toISOString().split('T')[0],
-        latitude: 45.0,
-        longitude: 25.0,
-        massifId: '',
-        typeId: '',
-        causeId: '',
-        orientationId: '',
-        size: '',
-        zone: '',
-        activity: '',
-        safetyEquipment: '',
-        eventTime: '',
-        technicalDetails: {
-            altitude: 0,
-            slopeInterpolation: 0,
-            trackLength: 0,
-            crownDepth: 0,
-            crownWidth: 0,
-            verticalDrop: 0,
-            accumulationArea: 0,
-            accumLat: 0,
-            accumLng: 0,
-            runoutVerticalDrop: 0,
-            relativeSize: '',
-            crownDepthText: ''
-        },
-        damagesAndVictims: {
-            personsCaught: 0,
-            personsPartially: 0,
-            personsFully: 0,
-            personsInjured: 0,
-            personsKilled: 0,
-            materialDamage: 0
-        }
-    });
-
-    const navigate = useNavigate();
+    const [formData, setFormData] = useState(null);
 
     useEffect(() => {
-        const loadMetadata = async () => {
-            const [massifs, types, causes, orientations] = await Promise.all([
-                metadataService.getMassifs(),
-                metadataService.getTypes(),
-                metadataService.getCauses(),
-                metadataService.getOrientations()
-            ]);
-            setMetadata({ massifs, types, causes, orientations });
+        const loadData = async () => {
+            try {
+                const [avalanche, massifs, types, causes, orientations] = await Promise.all([
+                    avalancheService.getById(id),
+                    metadataService.getMassifs(),
+                    metadataService.getTypes(),
+                    metadataService.getCauses(),
+                    metadataService.getOrientations()
+                ]);
+                
+                setMetadata({ massifs, types, causes, orientations });
+                
+                // Initialize form with fetched data
+                setFormData({
+                    title: avalanche.title || '',
+                    date: avalanche.date || new Date().toISOString().split('T')[0],
+                    imageUrls: avalanche.imageUrls || [],
+                    latitude: avalanche.latitude || 45.0,
+                    longitude: avalanche.longitude || 25.0,
+                    massifId: avalanche.massifId || '',
+                    typeId: avalanche.typeId || '',
+                    causeId: avalanche.causeId || '',
+                    orientationId: avalanche.orientationId || '',
+                    size: avalanche.size || '',
+                    zone: avalanche.zone || '',
+                    activity: avalanche.activity || '',
+                    safetyEquipment: avalanche.safetyEquipment || '',
+                    eventTime: avalanche.eventTime || '',
+                    technicalDetails: avalanche.technicalDetails || {
+                        altitude: 0,
+                        slopeInterpolation: 0,
+                        trackLength: 0,
+                        crownDepth: 0,
+                        crownWidth: 0,
+                        verticalDrop: 0,
+                        accumulationArea: 0,
+                        accumLat: 0,
+                        accumLng: 0,
+                        runoutVerticalDrop: 0,
+                        relativeSize: '',
+                        crownDepthText: ''
+                    },
+                    damagesAndVictims: avalanche.damagesAndVictims || {
+                        personsCaught: 0,
+                        personsPartially: 0,
+                        personsFully: 0,
+                        personsInjured: 0,
+                        personsKilled: 0,
+                        materialDamage: 0
+                    }
+                });
+            } catch (err) {
+                console.error('Eroare la încărcarea avalanșei:', err);
+                alert('Nu am putut încărca datele avalanșei pentru editare.');
+                navigate('/');
+            } finally {
+                setLoading(false);
+            }
         };
-        loadMetadata();
-    }, []);
+        loadData();
+    }, [id, navigate]);
 
     const handleChange = (e, section = null) => {
         const { name, value } = e.target;
@@ -82,45 +99,62 @@ const AvalancheFormPage = () => {
 
     const handleImageChange = (e) => {
         const selectedFiles = Array.from(e.target.files);
-        if (selectedFiles.length > 4) {
-            alert('Poți selecta maxim 4 imagini.');
-            // Only take the first 4
-            setImages(selectedFiles.slice(0, 4));
+        const currentCount = formData.imageUrls.length;
+        if (currentCount + selectedFiles.length > 4) {
+            alert(`Poți avea maxim 4 imagini în total. Date fiind cele ${currentCount} imagini deja existente, mai poți adăuga încă ${4 - currentCount}.`);
+            setNewImages(selectedFiles.slice(0, 4 - currentCount));
         } else {
-            setImages(selectedFiles);
+            setNewImages(selectedFiles);
+        }
+    };
+
+    const handleDeleteExistingImage = async (url) => {
+        if (window.confirm('Ești sigur că vrei să ștergi definitiv această imagine? (Acțiunea este instantanee)')) {
+            try {
+                await avalancheService.deleteImage(id, url);
+                setFormData({
+                    ...formData,
+                    imageUrls: formData.imageUrls.filter(img => img !== url)
+                });
+            } catch (err) {
+                alert('Eroare la ștergerea imaginii.');
+            }
         }
     };
 
     const handleFinalSubmit = async () => {
         try {
-            const newAvalanche = await avalancheService.create(formData);
-            
-            if (images.length > 0) {
-                await avalancheService.uploadImages(newAvalanche.id, images);
+            await avalancheService.update(id, formData);
+            if (newImages.length > 0) {
+                await avalancheService.uploadImages(id, newImages);
             }
-            
-            navigate('/');
+            navigate(`/avalanche/${id}`);
         } catch (err) {
-            const message = err.response?.data?.message || 'Eroare la trimiterea raportului. Asigură-te că toate câmpurile sunt completate corect.';
-            alert(message);
+            alert('Eroare la actualizarea raportului. Asigură-te că toate datele sunt corecte.');
         }
     };
 
     const nextStep = () => setStep(step + 1);
     const prevStep = () => setStep(step - 1);
 
+    if (loading) return (
+        <div className="flex justify-center items-center py-40">
+            <div className="text-primary animate-pulse">Se încarcă detaliile pentru editare...</div>
+        </div>
+    );
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-10">
                 <div>
-                    <h1 className="text-3xl font-bold">Eveniment Nou</h1>
-                    <p className="text-text-muted">Pasul {step} din 4</p>
+                    <h1 className="text-3xl font-bold">Editează Evenimentul</h1>
+                    <p className="text-text-muted">Pasul {step} din 4 (ID: {id})</p>
                 </div>
                 <div className="flex gap-2">
                     {[1, 2, 3, 4].map((s) => (
                         <div
                             key={s}
-                            className={`h-2 w-12 rounded-full transition-all ${s === step ? 'bg-primary w-20' : 'bg-glass-border'}`}
+                            className={`h-2 w-12 rounded-full transition-all ${s === step ? 'bg-blue-500 w-20' : 'bg-glass-border'}`}
                         />
                     ))}
                 </div>
@@ -132,13 +166,13 @@ const AvalancheFormPage = () => {
             >
                 {step === 1 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="flex items-center gap-2 text-xl font-bold text-primary mb-4">
+                        <div className="flex items-center gap-2 text-xl font-bold text-blue-400 mb-4">
                             <Info size={24} /> <h2>Informații Generale</h2>
                         </div>
 
                         <div className="space-y-2">
                             <label>Titlu Eveniment</label>
-                            <input name="title" className="w-full" value={formData.title} onChange={handleChange} required placeholder="Ex: Avalanșă Bâlea Lac" />
+                            <input name="title" className="w-full" value={formData.title} onChange={handleChange} required />
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
@@ -155,19 +189,53 @@ const AvalancheFormPage = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label>Imagini (Țineți apăsat CTRL pt. a alege max. 4)</label>
-                            <input 
-                                type="file" 
-                                multiple 
-                                accept="image/*" 
-                                onChange={handleImageChange} 
-                                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-button-text hover:file:bg-primary/90 text-text-muted cursor-pointer" 
-                            />
-                            {images.length > 0 && (
-                                <p className="text-sm text-theme-secondary mt-2">
-                                    {images.length} imagine(i) selectată(e).
-                                </p>
+                        <div className="space-y-4 pt-4 border-t border-glass-border">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-bold text-text-muted flex items-center gap-2">
+                                    <Maximize size={16} /> Editare Poze ({formData.imageUrls.length + newImages.length} / 4 maxime)
+                                </label>
+                            </div>
+
+                            {/* Existing Images */}
+                            {formData.imageUrls.length > 0 && (
+                                <div className="grid grid-cols-4 gap-4">
+                                    {formData.imageUrls.map((url, idx) => {
+                                        const cleanUrl = url.trim();
+                                        const imgSrc = cleanUrl.startsWith('http') ? cleanUrl : `http://localhost:8080${cleanUrl}`;
+                                        return (
+                                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-glass-border">
+                                                <img src={imgSrc} alt="Prezentare avalanșă" className="w-full h-24 object-cover" />
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => handleDeleteExistingImage(url)}
+                                                    className="absolute top-1 right-1 bg-accent-red hover:bg-red-600 text-white p-1 rounded-full shadow transition-colors"
+                                                    title="Șterge definitiv"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Add New Images */}
+                            {formData.imageUrls.length < 4 && (
+                                <div className="space-y-2">
+                                    <label className="text-xs text-text-muted">Adaugă imagini noi (cu CTRL)</label>
+                                    <input 
+                                        type="file" 
+                                        multiple 
+                                        accept="image/*" 
+                                        onChange={handleImageChange} 
+                                        className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500/20 file:text-blue-400 hover:file:bg-blue-500/30 text-text-muted cursor-pointer" 
+                                    />
+                                    {newImages.length > 0 && (
+                                        <p className="text-xs text-accent-green mt-2">
+                                            {newImages.length} imagine(i) nouă selectată(e) pentru upload.
+                                        </p>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
@@ -175,7 +243,7 @@ const AvalancheFormPage = () => {
 
                 {step === 2 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="flex items-center gap-2 text-xl font-bold text-primary mb-4">
+                        <div className="flex items-center gap-2 text-xl font-bold text-blue-400 mb-4">
                             <Map size={24} /> <h2>Localizare și Detalii</h2>
                         </div>
 
@@ -192,7 +260,7 @@ const AvalancheFormPage = () => {
 
                         <div className="space-y-2">
                             <label>Zonă / Vale</label>
-                            <input name="zone" className="w-full" value={formData.zone} onChange={handleChange} placeholder="Ex: Căldarea Bâlii" />
+                            <input name="zone" className="w-full" value={formData.zone} onChange={handleChange} />
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
@@ -218,7 +286,7 @@ const AvalancheFormPage = () => {
 
                 {step === 3 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="flex items-center gap-2 text-xl font-bold text-primary mb-4">
+                        <div className="flex items-center gap-2 text-xl font-bold text-blue-400 mb-4">
                             <Activity size={24} /> <h2>Detalii Tehnice</h2>
                         </div>
 
@@ -287,7 +355,7 @@ const AvalancheFormPage = () => {
 
                 {step === 4 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="flex items-center gap-2 text-xl font-bold text-primary mb-4">
+                        <div className="flex items-center gap-2 text-xl font-bold text-blue-400 mb-4">
                             <Users size={24} /> <h2>Victime și Pagube</h2>
                         </div>
 
@@ -331,12 +399,12 @@ const AvalancheFormPage = () => {
                     ) : <div></div>}
 
                     {step < 4 ? (
-                        <button type="button" onClick={nextStep} className="btn-primary flex items-center gap-2">
+                        <button type="button" onClick={nextStep} className="btn-primary bg-blue-500 hover:bg-blue-600 flex items-center gap-2">
                             Înainte <ChevronRight size={20} />
                         </button>
                     ) : (
                         <button type="button" onClick={handleFinalSubmit} className="btn-primary bg-accent-green hover:bg-accent-green/80 flex items-center gap-2">
-                            <Save size={20} /> Trimite Evenimentul
+                            <Save size={20} /> Salvează Modificările
                         </button>
                     )}
                 </div>
@@ -345,4 +413,4 @@ const AvalancheFormPage = () => {
     );
 };
 
-export default AvalancheFormPage;
+export default AvalancheEditPage;

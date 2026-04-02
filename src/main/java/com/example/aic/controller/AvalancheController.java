@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/avalanches")
@@ -73,10 +74,31 @@ public class AvalancheController {
         return ResponseEntity.ok(avalancheService.validateAvalanche(id));
     }
 
+    @PostMapping("/{id}/images")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<com.example.aic.model.AvalancheImage>> uploadImages(
+            @PathVariable Integer id,
+            @RequestParam("files") org.springframework.web.multipart.MultipartFile[] files) {
+        return ResponseEntity.ok(avalancheService.uploadImages(id, files));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EXPERT')")
+    public ResponseEntity<AvalancheDTO> update(@PathVariable Integer id, @RequestBody AvalancheDTO dto) {
+        return ResponseEntity.ok(avalancheService.updateAvalanche(id, dto));
+    }
+
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EXPERT')")
     public ResponseEntity<?> delete(@PathVariable Integer id) {
         avalancheService.deleteAvalanche(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}/images")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EXPERT')")
+    public ResponseEntity<?> deleteImageByUrl(@PathVariable Integer id, @RequestParam String imageUrl) {
+        avalancheService.deleteImageByUrl(id, imageUrl);
         return ResponseEntity.ok().build();
     }
 }

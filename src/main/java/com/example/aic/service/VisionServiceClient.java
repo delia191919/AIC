@@ -1,0 +1,53 @@
+package com.example.aic.service;
+
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
+
+@Service
+public class VisionServiceClient {
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String VISION_SERVICE_URL = "http://vision-service:8000/analyze";
+
+    public boolean validateImage(MultipartFile file) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            
+            // Convert MultipartFile to ByteArrayResource for RestTemplate
+            ByteArrayResource resource = new ByteArrayResource(file.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return file.getOriginalFilename();
+                }
+            };
+            
+            body.add("file", resource);
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.postForObject(VISION_SERVICE_URL, requestEntity, Map.class);
+
+            if (response != null && response.containsKey("valid")) {
+                return (Boolean) response.get("valid");
+            }
+
+            return true; // Fallback to true if service fails (don't block user if AI has issues)
+        } catch (Exception e) {
+            System.err.println("Vision service error: " + e.getMessage());
+            return true; // Fallback
+        }
+    }
+}

@@ -1,12 +1,41 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: aic_user
+      RABBITMQ_DEFAULT_PASS: aic_pass
+
   backend:
     build: .
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://192.168.0.157:3306/aic_avalanse
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: changeme
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: aic_user
+      SPRING_RABBITMQ_PASSWORD: aic_pass
     ports:
       - "8080:8080"
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./uploads:/app/uploads
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: aic_user
+      SPRING_RABBITMQ_PASSWORD: aic_pass
+    depends_on:
+      - rabbitmq
 
   frontend:
     build: ./frontend
@@ -14,3 +43,12 @@ services:
       - "8081:80"
     depends_on:
       - backend
+
+  vision-service:
+    build: ./vision-service
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 4G

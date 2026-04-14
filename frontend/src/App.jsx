@@ -9,6 +9,7 @@ import AvalancheDetailsPage from './pages/AvalancheDetailsPage';
 import ConditionsDetailsPage from './pages/ConditionsDetailsPage';
 import SearchPage from './pages/SearchPage';
 import UserManagementPanel from './pages/UserManagementPanel';
+import MeteoPage from './pages/MeteoPage';
 import { useAuth } from './context/AuthContext';
 
 // Protected Route Component
@@ -50,6 +51,7 @@ function App() {
           <Route path="/avalanche/:id" element={<AvalancheDetailsPage />} />
           <Route path="/conditions/:id" element={<ConditionsDetailsPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/meteo" element={<MeteoPage />} />
 
           {/* Protected Routes */}
           <Route path="/admin/users" element={

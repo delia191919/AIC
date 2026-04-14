@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import metadataService from '../services/metadataService';
 import avalancheService from '../services/avalancheService';
-import { Save, ChevronRight, ChevronLeft, Map, Info, Users, Activity } from 'lucide-react';
+import { Save, ChevronRight, ChevronLeft, Map, Info, Users, Activity, LocateFixed } from 'lucide-react';
 
 const AvalancheFormPage = () => {
     const [step, setStep] = useState(1);
@@ -90,6 +90,25 @@ const AvalancheFormPage = () => {
     const nextStep = () => setStep(step + 1);
     const prevStep = () => setStep(step - 1);
 
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            alert('Geolocația nu este suportată de browser-ul tău.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: parseFloat(position.coords.latitude.toFixed(4)),
+                    longitude: parseFloat(position.coords.longitude.toFixed(4))
+                }));
+            },
+            (error) => {
+                alert('Nu am putut obține locația: ' + error.message);
+            }
+        );
+    };
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-10">
@@ -140,8 +159,17 @@ const AvalancheFormPage = () => {
 
                 {step === 2 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="flex items-center gap-2 text-xl font-bold text-primary mb-4">
-                            <Map size={24} /> <h2>Localizare și Detalii</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-2 text-xl font-bold text-primary">
+                                <Map size={24} /> <h2>Localizare și Detalii</h2>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleGetLocation}
+                                className="flex items-center gap-2 text-sm bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors px-3 py-1.5 rounded-lg font-medium"
+                            >
+                                <LocateFixed size={16} /> Folosește Locația Mea
+                            </button>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">

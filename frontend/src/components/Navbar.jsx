@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mountain, LogOut, User, ShieldCheck, PlusCircle, Search, Users } from 'lucide-react';
+import { Mountain, LogOut, User, ShieldCheck, PlusCircle, Search, Users, Cloud } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout, isAdmin, isExpert } = useAuth();
@@ -26,6 +26,16 @@ const Navbar = () => {
                         <Link to="/search" className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
                             <Search size={18} />
                             <span>Căutare</span>
+                        </Link>
+
+                        <a href="/api/meteo" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                            <Cloud size={18} />
+                            <span>Risc Avalanșe (PDF)</span>
+                        </a>
+
+                        <Link to="/meteo" className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                            <Cloud size={18} />
+                            <span>Prognoză Montană</span>
                         </Link>
 
                         {user && (

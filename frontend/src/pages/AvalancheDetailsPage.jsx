@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import avalancheService from '../services/avalancheService';
 import metadataService from '../services/metadataService';
-import { Calendar, MapPin, Activity, ChevronLeft, Info, Users, Shield, Ruler, Maximize, Thermometer } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Calendar, MapPin, Activity, ChevronLeft, Info, Users, Shield, Ruler, Maximize, Thermometer, Edit, Trash2 } from 'lucide-react';
 
 const AvalancheDetailsPage = () => {
     const { id } = useParams();
@@ -15,6 +16,20 @@ const AvalancheDetailsPage = () => {
         causes: [],
         orientations: []
     });
+
+    const { isAdmin, isExpert } = useAuth();
+    const canEditOrDelete = isAdmin || isExpert;
+
+    const handleDelete = async () => {
+        if (window.confirm('Sunteți sigur că doriți să ștergeți această avalanșă? Datele vor fi pierdute definitiv!')) {
+            try {
+                await avalancheService.delete(id);
+                navigate('/');
+            } catch (err) {
+                alert('Eroare la ștergerea avalanșei: ' + (err.response?.data?.message || err.message));
+            }
+        }
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -72,14 +87,31 @@ const AvalancheDetailsPage = () => {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${avalanche.status === 'VALIDATED' ? 'bg-accent-green/20 text-accent-green' : 'bg-primary/20 text-primary'
+                <div className="flex flex-col md:flex-row items-center gap-3">
+                    {canEditOrDelete && (
+                        <div className="flex gap-2">
+                            <Link 
+                                to={`/avalanche/edit/${avalanche.id}`} 
+                                className="btn-primary bg-blue-500 hover:bg-blue-600 flex items-center gap-2 py-2 px-4 shadow-lg"
+                                title="Editează Avalanșă"
+                            >
+                                <Edit size={20} /> <span className="hidden sm:inline">Editează</span>
+                            </Link>
+                            <button 
+                                onClick={handleDelete} 
+                                className="btn-primary bg-accent-red hover:bg-red-600 flex items-center gap-2 py-2 px-4 shadow-lg mr-2"
+                                title="Șterge Avalanșă"
+                            >
+                                <Trash2 size={20} /> <span className="hidden sm:inline">Șterge</span>
+                            </button>
+                        </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                        <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${avalanche.status === 'VALIDATED' ? 'bg-accent-green/20 text-accent-green' : 'bg-primary/20 text-primary'
                         }`}>
                         {avalanche.status === 'VALIDATED' ? 'Validat' : 'În așteptare'}
                     </span>
-                    <span className="px-3 py-1 rounded-full bg-glass-bg border border-glass-border text-xs font-bold uppercase">
-                        Cod: {avalanche.id}
-                    </span>
+                    </div>
                 </div>
             </header>
 
@@ -224,9 +256,36 @@ const AvalancheDetailsPage = () => {
                                 )}
                             </div>
                         ) : (
-                            <p className="text-text-muted text-center py-10 italic">Nu există detalii tehnice pentru acest eveniment.</p>
+                                                    <p className="text-text-muted text-center py-10 italic">Nu există detalii tehnice pentru acest eveniment.</p>
                         )}
                     </div>
+
+                    {/* Images Section */}
+                    {avalanche.imageUrls && avalanche.imageUrls.length > 0 && (
+                        <div className="card glass p-8">
+                            <h2 className="text-2xl font-bold flex items-center gap-3 mb-8">
+                                <Maximize className="text-accent-green" size={28} /> Galerie Foto
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {avalanche.imageUrls.flatMap(urlGroup => urlGroup.split(';')).filter(url => url.trim().length > 0).map((url, idx) => {
+                                    const cleanUrl = url.trim();
+                                    const backendUrl = window.location.origin.includes('localhost') ? 'http://localhost:8080' : window.location.origin.replace(':8081', ':8080');
+                                    const imgSrc = cleanUrl.startsWith('http') ? cleanUrl : `${backendUrl}${cleanUrl}`;
+                                    
+                                    return (
+                                        <div key={idx} className="relative group overflow-hidden rounded-xl border border-glass-border">
+                                            <img 
+                                                src={imgSrc} 
+                                                alt={`Avalanșă imagine ${idx + 1}`} 
+                                                className="w-full h-64 object-cover transform transition-transform duration-500 group-hover:scale-110"
+                                                onError={(e) => { e.target.src = '/placeholder-mountain.jpg'; e.target.onerror = null; }}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

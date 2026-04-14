@@ -6,11 +6,17 @@ import Register from './pages/Register';
 import AvalancheFormPage from './pages/AvalancheFormPage';
 import ValidationPanel from './pages/ValidationPanel';
 import AvalancheDetailsPage from './pages/AvalancheDetailsPage';
+import AvalancheEditPage from './pages/AvalancheEditPage';
 import ConditionsDetailsPage from './pages/ConditionsDetailsPage';
 import SearchPage from './pages/SearchPage';
 import UserManagementPanel from './pages/UserManagementPanel';
 import MeteoPage from './pages/MeteoPage';
 import { useAuth } from './context/AuthContext';
+import { useEffect } from 'react';
+import { connectWebSocket } from './services/websocketService';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useNotifications } from './context/NotificationContext';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roleRequired }) => {
@@ -21,13 +27,35 @@ const ProtectedRoute = ({ children, roleRequired }) => {
 
   if (roleRequired === 'ADMIN' && !isAdmin) return <Navigate to="/" />;
   if (roleRequired === 'EXPERT' && !isExpert) return <Navigate to="/" />;
+  if (roleRequired === 'ADMIN_OR_EXPERT' && !isAdmin && !isExpert) return <Navigate to="/" />;
 
   return children;
 };
 
+let stompClient = null;
+
 function App() {
+  const { user } = useAuth();
+  const { addNotification } = useNotifications();
+
+  useEffect(() => {
+    const token = user?.token || user?.accessToken;
+    // Dacă utilizatorul e logat și nu avem deja un client conectat corect
+    if (user && token && !stompClient) {
+      stompClient = connectWebSocket(user, addNotification);
+    }
+
+    return () => {
+      if (stompClient) {
+        stompClient.deactivate();
+        stompClient = null;
+      }
+    };
+  }, [user?.token, user?.accessToken]);
+
   return (
     <div className="min-h-screen">
+      <ToastContainer position="top-right" autoClose={5000} />
       <Navbar />
       <main className="container pb-20">
         <Routes>
@@ -49,6 +77,11 @@ function App() {
           } />
 
           <Route path="/avalanche/:id" element={<AvalancheDetailsPage />} />
+          <Route path="/avalanche/edit/:id" element={
+            <ProtectedRoute roleRequired="ADMIN_OR_EXPERT">
+              <AvalancheEditPage />
+            </ProtectedRoute>
+          } />
           <Route path="/conditions/:id" element={<ConditionsDetailsPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/meteo" element={<MeteoPage />} />

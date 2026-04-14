@@ -24,14 +24,49 @@ const avalancheService = {
         const response = await api.post('/avalanches', data);
         return response.data;
     },
+    
+    createWithImages: async (avalancheData, files) => {
+        const formData = new FormData();
+        // Append JSON as a blob part so Spring identifies it correctly as RequestPart
+        formData.append('avalanche', JSON.stringify(avalancheData));
+        
+        if (files && files.length > 0) {
+            Array.from(files).forEach((file) => {
+                formData.append('files', file);
+            });
+        }
+        
+        const response = await api.post('/avalanches/multipart', formData);
+        return response.data;
+    },
+
+    uploadImages: async (id, files) => {
+        const formData = new FormData();
+        Array.from(files).forEach((file) => {
+            formData.append('files', file);
+        });
+        
+        const response = await api.post(`/avalanches/${id}/images`, formData);
+        return response.data;
+    },
 
     validate: async (id) => {
         const response = await api.put(`/avalanches/${id}/validate`);
         return response.data;
     },
 
+    update: async (id, data) => {
+        const response = await api.put(`/avalanches/${id}`, data);
+        return response.data;
+    },
+
     delete: async (id) => {
         const response = await api.delete(`/avalanches/${id}`);
+        return response.data;
+    },
+
+    deleteImage: async (id, imageUrl) => {
+        const response = await api.delete(`/avalanches/${id}/images`, { params: { imageUrl } });
         return response.data;
     }
 };

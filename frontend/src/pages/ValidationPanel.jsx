@@ -10,12 +10,22 @@ const ValidationPanel = () => {
         loadPending();
     }, []);
 
+    const [debugInfo, setDebugInfo] = useState('');
+
     const loadPending = async () => {
         try {
-            const all = await avalancheService.getAll();
-            setPending(all.filter(a => a.status === 'PENDING'));
+            const params = { page: 0, size: 100, sort: 'id,desc' };
+            const response = await avalancheService.getAll(params);
+            const allItems = response?.content || [];
+            
+            setDebugInfo(`Fetched ${allItems.length} items from server.`);
+            
+            const unvalidated = allItems.filter(a => a.status !== 'VALIDATED');
+            setPending(unvalidated);
         } catch (err) {
             console.error(err);
+            setDebugInfo(`Error fetching: ${err.message}`);
+            setPending([]);
         } finally {
             setLoading(false);
         }
@@ -46,6 +56,7 @@ const ValidationPanel = () => {
                 <div className="card glass p-20 text-center">
                     <ShieldCheck className="mx-auto mb-4 text-accent-green opacity-20" size={64} />
                     <p className="text-text-muted">Nu există rapoarte în așteptare.</p>
+                    <p className="text-xs text-text-muted mt-2 opacity-50">Debug info: {debugInfo}</p>
                 </div>
             ) : (
                 <div className="grid gap-4">

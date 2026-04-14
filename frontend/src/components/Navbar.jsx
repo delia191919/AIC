@@ -1,9 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Mountain, LogOut, User, ShieldCheck, PlusCircle, Search, Users, Cloud } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
+import { Mountain, LogOut, User, ShieldCheck, PlusCircle, Search, Users, Cloud, Bell, Check, Trash2 } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout, isAdmin, isExpert } = useAuth();
+    const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
+    const [showNotifications, setShowNotifications] = useState(false);
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -60,9 +64,83 @@ const Navbar = () => {
                         )}
                     </div>
 
-                    <div className="flex items-center gap-4 pl-6 border-l">
+                    <div className="flex items-center gap-4 pl-6 border-l relative">
                         {user ? (
                             <>
+                                {/* Buton Notificari */}
+                                <button
+                                    onClick={() => setShowNotifications(!showNotifications)}
+                                    className="p-2 transition-colors"
+                                    style={{ position: 'relative', borderRadius: '50%' }}
+                                    title="Notificări"
+                                >
+                                    <Bell size={20} className="text-text-main" />
+                                    {unreadCount > 0 && (
+                                        <span style={{
+                                            position: 'absolute', top: -5, right: -5,
+                                            backgroundColor: 'var(--accent-red)', color: 'white',
+                                            fontSize: '10px', fontWeight: 'bold', width: '18px', height: '18px',
+                                            borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}>
+                                            {unreadCount}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {/* Dropdown Notificari */}
+                                {showNotifications && (
+                                    <div style={{
+                                        position: 'absolute', top: '100%', right: 0, marginTop: '1rem',
+                                        width: '24rem', backgroundColor: '#1e2330', border: '1px solid var(--border)',
+                                        borderRadius: '1rem', boxShadow: 'var(--shadow)', overflow: 'hidden', zIndex: 50
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid var(--border)' }}>
+                                            <h3 style={{ fontWeight: '600', color: 'var(--text-main)', margin: 0 }}>Notificări</h3>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={markAllAsRead} style={{ color: 'var(--text-muted)', background: 'none' }} title="Marchează toate ca citite">
+                                                    <Check size={16} />
+                                                </button>
+                                                <button onClick={clearAll} style={{ color: 'var(--accent-red)', background: 'none' }} title="Șterge toate">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div style={{ maxHeight: '24rem', overflowY: 'auto' }}>
+                                            {notifications.length === 0 ? (
+                                                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                                                    Nu ai nicio notificare.
+                                                </div>
+                                            ) : (
+                                                notifications.map(notif => (
+                                                    <div
+                                                        key={notif.id}
+                                                        onClick={() => markAsRead(notif.id)}
+                                                        style={{
+                                                            padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                                            cursor: 'pointer', backgroundColor: notif.read ? 'transparent' : 'rgba(255,255,255,0.03)',
+                                                            display: 'flex', gap: '0.75rem'
+                                                        }}
+                                                    >
+                                                        <div style={{
+                                                            marginTop: '0.25rem', width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                                                            backgroundColor: notif.type === 'admin' ? '#3b82f6' : '#22c55e',
+                                                            opacity: notif.read ? 0 : 1
+                                                        }}></div>
+                                                        <div>
+                                                            <p style={{ margin: 0, fontSize: '0.875rem', color: notif.read ? 'var(--text-muted)' : 'white', fontWeight: notif.read ? 'normal' : '500' }}>
+                                                                {notif.message}
+                                                            </p>
+                                                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block' }}>
+                                                                {new Date(notif.date).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex items-center gap-2 text-xs text-text-muted bg-white/5 py-1.5 px-3 rounded-full">
                                     <User size={14} />
                                     <span className="font-medium">{user.username}</span>
